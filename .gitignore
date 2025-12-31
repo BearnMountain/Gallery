@@ -1,5 +1,8 @@
 .cache
 .DS_Store
-external
+deps
 build
 opengl.pdf
+
+bin
+compile_commands.json

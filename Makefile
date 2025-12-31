@@ -3,10 +3,10 @@ ifeq ($(OS),Windows_NT)
     PLATFORM := Windows
     RM := del /Q /F
     RMDIR := rmdir /S /Q
-    MKDIR := mkdir
+    MKDIR := if not exist
     SEP := \\
     EXE := .exe
-    CURL := curl -L -o
+    NULL := NUL
 else
     UNAME := $(shell uname -s)
     ifeq ($(UNAME),Linux)
@@ -20,7 +20,7 @@ else
     MKDIR := mkdir -p
     SEP := /
     EXE :=
-    CURL := curl -L -o
+    NULL := /dev/null
 endif
 
 # Project settings
@@ -29,15 +29,22 @@ CC := gcc
 CFLAGS := -Wall -Wextra -std=c11 -Ideps/include -Isrc
 LDFLAGS := -Ldeps/lib
 
+COMPILE_DB := compile_commands.json
+
+# Platform-specific flags
+ifeq ($(PLATFORM),macOS)
+    CFLAGS += -DGL_SILENCE_DEPRECATION
+endif
+
 # Platform-specific libraries
 ifeq ($(PLATFORM),Windows)
-    LIBS := -lopengl32 -lgdi32
+    LIBS := -lglfw3 -lopengl32 -lgdi32
 endif
 ifeq ($(PLATFORM),Linux)
-    LIBS := -lGL -lm -ldl -lpthread
+    LIBS := -lglfw3 -lGL -lm -ldl -lpthread -lX11 -lXrandr -lXi -lXxf86vm -lXcursor -lXinerama
 endif
 ifeq ($(PLATFORM),macOS)
-    LIBS := -framework OpenGL -framework Cocoa -framework IOKit
+    LIBS := -lglfw3 -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
 endif
 
 # Directories
@@ -47,15 +54,25 @@ OBJ_DIR := obj
 BIN_DIR := bin
 
 # Files
-SRCS := $(wildcard $(SRC_DIR)/*.c)
+SRCS := $(shell find $(SRC_DIR) -name '*.c')
 OBJS := $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 DEPS_OBJS := $(OBJ_DIR)/glad.o
 TARGET := $(BIN_DIR)/$(PROJECT)$(EXE)
 
-# GLAD and stb_image URLs
-GLAD_URL := https://raw.githubusercontent.com/Dav1dde/glad/glad2/glad/glad.h
-GLAD_C_URL := https://raw.githubusercontent.com/Dav1dde/glad/glad2/glad/gl.h
-STB_IMAGE_URL := https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
+# GLFW version
+GLFW_VERSION := 3.4
+GLFW_ARCHIVE := glfw-$(GLFW_VERSION).zip
+GLFW_URL := https://github.com/glfw/glfw/releases/download/$(GLFW_VERSION)/$(GLFW_ARCHIVE)
+GLFW_DIR := $(DEP_DIR)/glfw-$(GLFW_VERSION)
+GLFW_BUILD := $(GLFW_DIR)/build
+GLFW_LIB := $(DEP_DIR)/lib/libglfw3.a
+
+# Dependency files
+GLAD_H := $(DEP_DIR)/include/glad/glad.h
+GLAD_C := $(DEP_DIR)/src/glad.c
+KHR_H := $(DEP_DIR)/include/KHR/khrplatform.h
+STB_H := $(DEP_DIR)/include/stb_image.h
+GLFW_H := $(DEP_DIR)/include/GLFW/glfw3.h
 
 # Default target
 .PHONY: all
@@ -68,31 +85,75 @@ $(OBJ_DIR):
 $(BIN_DIR):
 	@$(MKDIR) $(BIN_DIR)
 
+$(DEP_DIR)/include/glad:
+	@$(MKDIR) $(DEP_DIR)/include/glad
+
+$(DEP_DIR)/include/KHR:
+	@$(MKDIR) $(DEP_DIR)/include/KHR
+
 $(DEP_DIR)/include:
-	@$(MKDIR) $(DEP_DIR)$(SEP)include$(SEP)glad
-	@$(MKDIR) $(DEP_DIR)$(SEP)include$(SEP)KHR
+	@$(MKDIR) $(DEP_DIR)/include
 
 $(DEP_DIR)/src:
-	@$(MKDIR) $(DEP_DIR)$(SEP)src
+	@$(MKDIR) $(DEP_DIR)/src
 
-# Download dependencies
+$(DEP_DIR)/lib:
+	@$(MKDIR) $(DEP_DIR)/lib
+
+# Download GLAD header - using web.archive.org snapshot of working GLAD files
+$(GLAD_H): | $(DEP_DIR)/include/glad
+	@echo "Downloading GLAD header..."
+	@curl -sL -o $(GLAD_H) "https://raw.githubusercontent.com/Dav1dde/glad/refs/heads/c/include/glad/glad.h"
+	@echo "#include <glad/glad.h>" > $(DEP_DIR)/include/glad/gl.h
+
+# Download GLAD source
+$(GLAD_C): | $(DEP_DIR)/src
+	@echo "Downloading GLAD source..."
+	@curl -sL -o $(GLAD_C) "https://raw.githubusercontent.com/Dav1dde/glad/refs/heads/c/src/glad.c"
+
+# Download KHR platform header
+$(KHR_H): | $(DEP_DIR)/include/KHR
+	@echo "Downloading KHR platform header..."
+	@curl -sL -o $(KHR_H) https://raw.githubusercontent.com/KhronosGroup/EGL-Registry/main/api/KHR/khrplatform.h
+
+# Download stb_image
+$(STB_H): | $(DEP_DIR)/include
+	@echo "Downloading stb_image..."
+	@curl -sL -o $(STB_H) https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
+
+# Download and build GLFW
+$(DEP_DIR)/$(GLFW_ARCHIVE): | $(DEP_DIR)
+	@echo "Downloading GLFW $(GLFW_VERSION)..."
+	@curl -sL -o $(DEP_DIR)/$(GLFW_ARCHIVE) $(GLFW_URL)
+
+$(GLFW_DIR): $(DEP_DIR)/$(GLFW_ARCHIVE)
+	@echo "Extracting GLFW..."
+	@cd $(DEP_DIR) && unzip -q $(GLFW_ARCHIVE)
+
+$(GLFW_LIB): $(GLFW_DIR) | $(DEP_DIR)/lib
+	@echo "Building GLFW (this may take a minute)..."
+	@$(MKDIR) $(GLFW_BUILD)
+	@cd $(GLFW_BUILD) && cmake -DCMAKE_INSTALL_PREFIX=../../ -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF .. > $(NULL) 2>&1
+	@cd $(GLFW_BUILD) && cmake --build . --config Release > $(NULL) 2>&1
+	@cd $(GLFW_BUILD) && cmake --install . > $(NULL) 2>&1
+	@echo "GLFW built successfully!"
+
+$(GLFW_H): $(GLFW_LIB)
+
+# Ensure dependencies are downloaded
 .PHONY: deps
-deps: $(DEP_DIR)/include $(DEP_DIR)/src
-	@echo "Downloading dependencies..."
-	@if not exist "$(DEP_DIR)$(SEP)include$(SEP)glad$(SEP)glad.h" $(CURL) $(DEP_DIR)$(SEP)include$(SEP)glad$(SEP)glad.h $(GLAD_URL) 2>nul || :
-	@if not exist "$(DEP_DIR)$(SEP)include$(SEP)KHR$(SEP)khrplatform.h" $(CURL) $(DEP_DIR)$(SEP)include$(SEP)KHR$(SEP)khrplatform.h https://raw.githubusercontent.com/KhronosGroup/EGL-Registry/main/api/KHR/khrplatform.h 2>nul || :
-	@if not exist "$(DEP_DIR)$(SEP)src$(SEP)glad.c" $(CURL) $(DEP_DIR)$(SEP)src$(SEP)glad.c https://raw.githubusercontent.com/Dav1dde/glad/glad2/src/gl.c 2>nul || :
-	@if not exist "$(DEP_DIR)$(SEP)include$(SEP)stb_image.h" $(CURL) $(DEP_DIR)$(SEP)include$(SEP)stb_image.h $(STB_IMAGE_URL) 2>nul || :
-	@echo "Dependencies ready!"
+deps: $(GLAD_H) $(GLAD_C) $(KHR_H) $(STB_H) $(GLFW_H)
+	@echo "All dependencies ready!"
 
 # Compile GLAD
-$(OBJ_DIR)/glad.o: $(DEP_DIR)/src/glad.c | $(OBJ_DIR)
+$(OBJ_DIR)/glad.o: $(GLAD_C) $(GLAD_H) $(KHR_H) | $(OBJ_DIR)
 	@echo "Compiling GLAD..."
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $(GLAD_C) -o $@
 
 # Compile source files
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR) deps
 	@echo "Compiling $<..."
+	@$(MKDIR) $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 # Link executable
@@ -101,34 +162,30 @@ $(TARGET): $(DEPS_OBJS) $(OBJS) | $(BIN_DIR)
 	@$(CC) $(LDFLAGS) $^ -o $@ $(LIBS)
 	@echo "Build complete: $(TARGET)"
 
+# Compiler Commands for NVIM
+.PHONY: compdb
+compdb:
+	@echo "Generating compile_commands.json..."
+	@bear -- $(MAKE) --no-print-directory
+	@echo "compile_commands.json generated"
+
+
 # Run the program
 .PHONY: run
 run: $(TARGET)
 	@./$(TARGET)
+	-@$(RMDIR) $(OBJ_DIR) 2>$(NULL) || true
 
 # Clean build artifacts
 .PHONY: clean
 clean:
 	@echo "Cleaning build artifacts..."
-	@$(RMDIR) $(OBJ_DIR) 2>nul || $(RM) $(OBJ_DIR)$(SEP)*.o 2>nul || :
-	@$(RMDIR) $(BIN_DIR) 2>nul || $(RM) $(TARGET) 2>nul || :
+	-@$(RMDIR) $(BIN_DIR) 2>$(NULL) || true
 	@echo "Clean complete!"
 
 # Clean everything including dependencies
 .PHONY: cleanall
 cleanall: clean
 	@echo "Removing dependencies..."
-	@$(RMDIR) $(DEP_DIR) 2>nul || :
+	-@$(RMDIR) $(DEP_DIR) 2>$(NULL) || true
 	@echo "Full clean complete!"
-
-# Help
-.PHONY: help
-help:
-	@echo "Available targets:"
-	@echo "  make          - Build the project"
-	@echo "  make deps     - Download dependencies"
-	@echo "  make run      - Build and run the project"
-	@echo "  make clean    - Remove build artifacts"
-	@echo "  make cleanall - Remove build artifacts and dependencies"
-	@echo ""
-	@echo "Platform detected: $(PLATFORM)"

@@ -1,13 +1,14 @@
 #include <stdio.h>
-#include <glad/gl.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "config.h"
 #include "log.h"
-#include "keybind.h"
+#include "input.h"
 #include "gui/gui.h"
 
 void framebuffer_size_callback(GLFWwindow* window, i32 width, i32 height) {
+	(void)window;
 	glViewport(0, 0, width, height);
 }
 
@@ -27,11 +28,11 @@ int main(void) {
 	glfwMakeContextCurrent(window);
 
 	// setup glad
-	if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		log_err("Failed to init GLAD");
 		return -1;
 	}
-
+	
 	// setup viewport
 	glViewport(0, 0, config.window_width, config.window_height);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);	
@@ -39,9 +40,13 @@ int main(void) {
 	// setup engine
 	gui_init();
 
+	// setup keybind callback
+	// glfwSetKeyCallback(window, keybind_callback);
+	// glfwSetCharCallback(GLFWwindow *window, GLFWcharfun callback)
+
 	// game loop
 	while (!glfwWindowShouldClose(window)) {
-		keybind_process_input(window);
+		// keybind_process_input(window);
 
 		// run engine
 		gui_render();
