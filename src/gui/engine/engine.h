@@ -1,46 +1,39 @@
 #ifndef _ENGINE_H_
 #define _ENGINE_H_
 
-#include "../../defines.h"
-#include <OpenGL/gltypes.h>
+/*
+	Engine knows what exists and how to create different widgets
+*/
+
+#include "defines.h"
+#include "render.h"
+
 #include <stddef.h>
 
-typedef enum {
-	WIDGET_LABEL,
-	WIDGET_BUTTON,
-	WIDGET_TEXTBOX,
-	WIDGET_IMAGEBOX
-} WidgetType;
-
 typedef struct {
-	f16 x, y, width, height;
-} Rect;
+	u8 r, g, b, a;
+} Color;
 
-typedef struct Widget {
-	WidgetType type;
-	Rect bounds;
-	b32 visible;
-	b32 enabled;
-	void* data; // points to *Data struct
-} Widget; 
-
-// *Data struct
+// Camera
 typedef struct {
-	char text[256];
-	f16 r,g,b,a; // text color
-	f16 font_size;
-} LabelData;
-typedef struct {
-	GLuint texture;
-} ImageBoxData;
-typedef struct {
-	char text[256];
-	size_t cursor_pos;
-} TextBoxData;
+	f16 x, y;
+} Camera;
 
-void engine_init(void);
+void engine_init(Camera* scene_camera); // camera used for every engine render call
+void engine_uninit(void);
 
-// hitbox
-b32 widget_contains_bounds(Widget* widget, f16 x, f16 y);
+// create: all return ids to the object
+Mesh* engine_create_label(const char* text, const M_Rect bounds, const Color color, b32 visible); // returns an ID
+Mesh* engine_create_image(void); // todo 
+Mesh* engine_create_textbox(void); // todo
+Mesh* engine_create_button(void); // todo
+
+
+// delete: pass id
+void engine_delete_widget(u32 id);
+
+
+// render scene
+void engine_render(void);
 
 #endif

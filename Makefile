@@ -26,7 +26,7 @@ endif
 # Project settings
 PROJECT := myapp
 CC := gcc
-CFLAGS := -Wall -Wextra -std=c11 -Ideps/include -Isrc
+CFLAGS := -Wall -Wextra -Werror -g -O0 -std=c11 -Ideps/include -Isrc
 LDFLAGS := -Ldeps/lib
 
 COMPILE_DB := compile_commands.json
@@ -104,7 +104,7 @@ $(DEP_DIR)/lib:
 $(GLAD_H): | $(DEP_DIR)/include/glad
 	@echo "Downloading GLAD header..."
 	@curl -sL -o $(GLAD_H) "https://raw.githubusercontent.com/Dav1dde/glad/refs/heads/c/include/glad/glad.h"
-	@echo "#include <glad/glad.h>" > $(DEP_DIR)/include/glad/gl.h
+	@echo "#include <glad/glad.h>" > $(DEP_DIR)/include/glad/gl3.h
 
 # Download GLAD source
 $(GLAD_C): | $(DEP_DIR)/src

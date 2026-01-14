@@ -1,7 +1,8 @@
 #ifndef _INPUT_H_
 #define _INPUT_H_
 
-#include "GLFW/glfw3.h"
+#define GLFW_INCLUDE_NONE // removes OpenGL/gl.h include, uses gl3.h
+#include <GLFW/glfw3.h>
 
 typedef enum {
     ACTION_MOVE_UP,

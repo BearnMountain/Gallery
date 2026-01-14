@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <glad/glad.h>
+#define GLFW_INCLUDE_NONE // removes OpenGL/gl.h include, uses gl3.h
 #include <GLFW/glfw3.h>
 
 #include "config.h"
@@ -47,6 +48,9 @@ int main(void) {
 	// game loop
 	while (!glfwWindowShouldClose(window)) {
 		// keybind_process_input(window);
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+			glfwSetWindowShouldClose(window, true);
+		}
 
 		// run engine
 		gui_render();
