@@ -9,8 +9,8 @@
 #define i32 int32_t
 #define i16 int16_t
 #define i8 int8_t
-#define f32 double
-#define f16 float
+#define f64 double
+#define f32 float
 #define b32 int32_t
 
 #define true 1

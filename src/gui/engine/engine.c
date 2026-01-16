@@ -25,7 +25,7 @@ typedef struct Widget {
 typedef struct {
 	char text[256];
 	u8 r,g,b,a; // text color
-	f16 font_size;
+	f32 font_size;
 } LabelData;
 typedef struct {
 	u32 textures;
@@ -45,8 +45,8 @@ static u32 mesh_capacity;
 static u32 mesh_count;
 
 void engine_init(Camera* scene_camera) {
-	if (camera == NULL) {
-		log_err("engine_init camera must not be null");
+	if (scene_camera == NULL) {
+		log_warn("engine_init camera must not be null");
 	}
 
 	camera = scene_camera;
@@ -77,30 +77,30 @@ Mesh* engine_create_label(const char* text, const M_Rect bounds, const Color col
 	// resize mesh for more objects
 	if (mesh_capacity == mesh_count) {
 		mesh_capacity *= 2;
-		meshes = realloc(meshes, mesh_capacity * sizeof(Mesh*));
+		meshes = realloc(meshes, mesh_capacity * sizeof(Mesh));
 	}
 	
 	// normalize data
-	f16 x = (bounds.x / config.window_width)*2-1;
-	f16 y = (bounds.y / config.window_height)*2-1;
-	f16 width = (bounds.width / config.window_width)*2-1;
-	f16 height = (bounds.height / config.window_height)*2-1;
-	f16 r = color.r / 255.0f;
-	f16 g = color.g / 255.0f;
-	f16 b = color.b / 255.0f;
-	f16 a = color.a / 255.0f;
+	f32 x1 = ((f32)bounds.x / config.window_width) * 2.0f - 1.0f;
+	f32 y1 = ((f32)bounds.y / config.window_height) * 2.0f - 1.0f;
+	f32 x2 = ((f32)(bounds.x+bounds.width) / config.window_width) * 2.0f - 1.0f;
+	f32 y2 = ((f32)(bounds.y+bounds.height) / config.window_height) * 2.0f - 1.0f;
+	f32 r = color.r / 255.0f;
+	f32 g = color.g / 255.0f;
+	f32 b = color.b / 255.0f;
+	f32 a = color.a / 255.0f;
 
 	// create mesh vertices
-	f16 rect[] = {
+	f32 rect[] = {
 		// triangle 1
-		x, y, COLOR,
-		x + width, y, COLOR,
-		x + width, y + height, COLOR,
+		x1, y1, COLOR,
+		x2, y1, COLOR,
+		x2, y2, COLOR,
 
 		// triangle 2
-		x, y, COLOR,
-		x, y + height, COLOR,
-		x + width, y + width, COLOR
+		x1, y1, COLOR,
+		x1, y2, COLOR,
+		x2, y2, COLOR
 	};
 
 	// adding the mesh
@@ -110,10 +110,21 @@ Mesh* engine_create_label(const char* text, const M_Rect bounds, const Color col
 	return &meshes[mesh_count-1];
 }
 
-// b32 widget_contains_bounds(Widget* widget, f16 mouse_x, f16 mouse_y) {
-// 	if (!widget->visible || !widget->enabled) return 0;
-//     return mouse_x >= widget->bounds.x && mouse_x <= widget->bounds.x + widget->bounds.width &&
-//            mouse_y >= widget->bounds.y && mouse_y <= widget->bounds.y + widget->bounds.height;
-// }
+Mesh* engine_create_image(void) {
+	
+}
 
+Mesh* engine_create_textbox(void) {
 
+	return NULL;
+}
+
+Mesh* engine_create_button(void) {
+
+	return NULL;
+}
+
+b32 engine_remove_widget(const Mesh* mesh) {
+	log_warn("engine_remoce_widget")
+	return false;
+}

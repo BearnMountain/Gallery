@@ -2,7 +2,7 @@
 #include <OpenGL/gl3.h>
 #include <string.h>
 
-#include "../defines.h"
+#include "defines.h"
 #include "engine/engine.h"
 #include "log.h"
 
@@ -15,7 +15,7 @@ void gui_init(void) {
 	engine_init(&camera);
 
 	// setting the scene
-	engine_create_label("test", (M_Rect){100,100,100,100}, (Color){0,0,0,0}, 0);
+	engine_create_label("test", (M_Rect){100,100,100,100}, (Color){100,100,100,255}, true);
 }
 
 void gui_render(void) {

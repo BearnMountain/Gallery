@@ -3,6 +3,7 @@
 #include "util/io.h"
 
 #include <glad/glad.h>
+#include <stdio.h>
 #define GLFW_INCLUDE_NONE // removes OpenGL/gl.h include, uses gl3.h
 #include <GLFW/glfw3.h>
 
@@ -11,7 +12,7 @@ static u32 shader_program;
 const char* VERTEX_SRC = "#version 330 core\nlayout (location = 0) in vec3 aPos;\nvoid main() {\ngl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);\n}"; 
 const char* FRAGMENT_SRC = "#version 330 core\nout vec4 FragColor;\nvoid main() {\n	FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n}";
 
-f16 vertices[] = {
+f32 vertices[] = {
 	-0.5f, -0.5f, 0.0f,
 	0.5f, -0.5f, 0.0f,
 	0.0f, 0.5f, 0.0f
@@ -70,17 +71,21 @@ void render_uninit(Mesh* meshes, const u32 count) {
 	}
 }
 
-void render_load_mesh(const float* vertices, const u32 triangle_count, Mesh* mesh) {
+void render_load_mesh(const f32* vertices, const u32 triangle_count, Mesh* mesh) {
+	printf("load mesh: %d\n", triangle_count);
 	glGenVertexArrays(1, &mesh->VAO);
+	glGenBuffers(1, &mesh->VBO);
+
 	glBindVertexArray(mesh->VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, mesh->VBO);
 	glBufferData(GL_ARRAY_BUFFER, 
-			  triangle_count*3*6, // 3 vertices in a triangle * 6 values(x,y,r,g,b,a) per
+			  triangle_count*3*6*sizeof(f32), // 3 vertices in a triangle * 6 values(x,y,r,g,b,a) per
 			  vertices, GL_STATIC_DRAW
 	);
-	glVertexAttribPointer(0,2,GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+
+	glVertexAttribPointer(0,2,GL_FLOAT, GL_FALSE, 6 * sizeof(f32), (void*)0);
 	glEnableVertexAttribArray(0); 
-	glVertexAttribPointer(1,4,GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(2 * sizeof(float)));
+	glVertexAttribPointer(1,4,GL_FLOAT, GL_FALSE, 6 * sizeof(f32), (void*)(2 * sizeof(f32)));
 	glEnableVertexAttribArray(1);
 }
 
@@ -89,6 +94,6 @@ void render(Mesh* meshes, u32 mesh_count) {
 	glUseProgram(shader_program);
 	for (u32 i = 0; i < mesh_count; i++) {
 		glBindVertexArray(meshes[i].VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 	}
-	glDrawArrays(GL_TRIANGLES, 0, 3);
 }

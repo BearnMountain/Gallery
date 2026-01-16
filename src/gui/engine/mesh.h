@@ -4,7 +4,7 @@
 #include "defines.h"
 
 typedef struct {
-	f16 x, y, width, height;
+	f32 x, y, width, height;
 } M_Rect; // rectangular bounds
 
 typedef struct {

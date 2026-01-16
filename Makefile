@@ -24,7 +24,7 @@ else
 endif
 
 # Project settings
-PROJECT := myapp
+PROJECT := Gallery
 CC := gcc
 CFLAGS := -Wall -Wextra -Werror -g -O0 -std=c11 -Ideps/include -Isrc
 LDFLAGS := -Ldeps/lib
