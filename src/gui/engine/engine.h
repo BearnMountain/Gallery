@@ -23,12 +23,12 @@ void engine_init(Camera* scene_camera); // camera used for every engine render c
 void engine_uninit(void);
 
 // create: all return mesh that can be used to remove object
-Mesh* engine_create_label(const char* text, const M_Rect bounds, const Color color, b32 visible); // returns an ID
-Mesh* engine_create_image(void); 
+Mesh* engine_create_label(const char* text, const M_Rect* bounds, const Color* color, b32 visible); // returns an ID
+Mesh* engine_create_image(const char* path, const M_Rect* bounds, b32 visible); 
 Mesh* engine_create_textbox(void); 
 Mesh* engine_create_button(void); 
 
-b32 engine_remove_widget();
+b32 engine_remove_widget(const Mesh* mesh);
 
 // delete: pass id
 void engine_delete_widget(u32 id);

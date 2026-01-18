@@ -3,6 +3,7 @@
 #include "log.h"
 #include <stdlib.h>
 #include <glad/glad.h>
+#include "stb_image.h"
 
 #define COLOR r,g,b,a
 
@@ -69,7 +70,7 @@ void engine_render(void) {
 }
 
 // creating widgets 
-Mesh* engine_create_label(const char* text, const M_Rect bounds, const Color color, b32 visible) {
+Mesh* engine_create_label(const char* text, const M_Rect* bounds, const Color* color, b32 visible) {
 	(void)visible;
 	(void)text;
 	// TODO; bounds check?
@@ -81,37 +82,67 @@ Mesh* engine_create_label(const char* text, const M_Rect bounds, const Color col
 	}
 	
 	// normalize data
-	f32 x1 = ((f32)bounds.x / config.window_width) * 2.0f - 1.0f;
-	f32 y1 = ((f32)bounds.y / config.window_height) * 2.0f - 1.0f;
-	f32 x2 = ((f32)(bounds.x+bounds.width) / config.window_width) * 2.0f - 1.0f;
-	f32 y2 = ((f32)(bounds.y+bounds.height) / config.window_height) * 2.0f - 1.0f;
-	f32 r = color.r / 255.0f;
-	f32 g = color.g / 255.0f;
-	f32 b = color.b / 255.0f;
-	f32 a = color.a / 255.0f;
+	f32 x1 = ((f32)bounds->x / config.window_width) * 2.0f - 1.0f;
+	f32 y1 = ((f32)bounds->y / config.window_height) * 2.0f - 1.0f;
+	f32 x2 = ((f32)(bounds->x+bounds->width) / config.window_width) * 2.0f - 1.0f;
+	f32 y2 = ((f32)(bounds->y+bounds->height) / config.window_height) * 2.0f - 1.0f;
+	f32 r = color->r / 255.0f;
+	f32 g = color->g / 255.0f;
+	f32 b = color->b / 255.0f;
+	f32 a = color->a / 255.0f;
 
-	// create mesh vertices
+	// create mesh vertices and triangles 2 triangles with shared verts
 	f32 rect[] = {
-		// triangle 1
 		x1, y1, COLOR,
 		x2, y1, COLOR,
-		x2, y2, COLOR,
-
-		// triangle 2
-		x1, y1, COLOR,
 		x1, y2, COLOR,
 		x2, y2, COLOR
 	};
+	
+	u32 indices[] = {
+		0, 1, 3,
+		3, 2, 0
+	};
 
 	// adding the mesh
-	render_load_mesh(rect, 2, &meshes[mesh_count]);
+	render_load_mesh(&meshes[mesh_count], rect, 4, indices, 6);
+	meshes[mesh_count].texture = 0;
 
 	mesh_count++;
 	return &meshes[mesh_count-1];
 }
 
-Mesh* engine_create_image(void) {
-	
+Mesh* engine_create_image(const char* path, const M_Rect* bounds, b32 visible) {
+	(void)visible;
+
+	if (mesh_capacity == mesh_count) {
+		mesh_capacity *= 2;
+		meshes = realloc(meshes, mesh_capacity * sizeof(Mesh));
+	}
+
+	f32 x1 = ((f32)bounds->x / config.window_width) * 2.0f - 1.0f;
+	f32 y1 = ((f32)bounds->y / config.window_height) * 2.0f - 1.0f;
+	f32 x2 = ((f32)(bounds->x+bounds->width) / config.window_width) * 2.0f - 1.0f;
+	f32 y2 = ((f32)(bounds->y+bounds->height) / config.window_height) * 2.0f - 1.0f;
+
+
+	float vertices[] = {
+		// positions          // colors           // texture coords
+		 0.5f,  0.5f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+		 0.5f, -0.5f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+		-0.5f, -0.5f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+		-0.5f,  0.5f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+	};
+	u32 indices[] = {
+		0, 1, 2, 
+		1, 3, 2
+	}; 
+
+	render_load_texture(&meshes[mesh_count], path, vertices);
+
+
+	mesh_count++;
+	return &meshes[mesh_count-1];
 }
 
 Mesh* engine_create_textbox(void) {
@@ -125,6 +156,7 @@ Mesh* engine_create_button(void) {
 }
 
 b32 engine_remove_widget(const Mesh* mesh) {
-	log_warn("engine_remoce_widget")
+	(void)mesh;
+	log_warn("engine_remoce_widget");
 	return false;
 }

@@ -1,0 +1,7 @@
+-Wall
+-Wextra
+-g
+-I/opt/homebrew/Cellar/glm/1.0.3/include
+-I/opt/homebrew/Cellar/glfw/3.4/include
+-Iobjs
+-Isrc

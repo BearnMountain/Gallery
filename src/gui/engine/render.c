@@ -1,6 +1,6 @@
 #include "render.h"
 #include "log.h"
-#include "util/io.h"
+#include "stb_image.h"
 
 #include <glad/glad.h>
 #include <stdio.h>
@@ -67,33 +67,104 @@ void render_uninit(Mesh* meshes, const u32 count) {
 	// remove opengl elements form the gpu
 	for (u32 i = 0; i < count; i++) {
 		glDeleteVertexArrays(1, &meshes[i].VAO);
-		glDeleteVertexArrays(1, &meshes[i].VBO);
+		glDeleteBuffers(1, &meshes[i].VBO);
+		glDeleteBuffers(1, &meshes[i].EBO);
 	}
 }
 
-void render_load_mesh(const f32* vertices, const u32 triangle_count, Mesh* mesh) {
-	printf("load mesh: %d\n", triangle_count);
+void render_load_mesh(Mesh* mesh, 
+					  const f32* vertices, const u32 vertex_count, 
+					  const u32* indices, const u32 indice_count) {
+
+	mesh->index_count = indice_count;
+	
 	glGenVertexArrays(1, &mesh->VAO);
 	glGenBuffers(1, &mesh->VBO);
+	glGenBuffers(1, &mesh->EBO);
 
 	glBindVertexArray(mesh->VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, mesh->VBO);
-	glBufferData(GL_ARRAY_BUFFER, 
-			  triangle_count*3*6*sizeof(f32), // 3 vertices in a triangle * 6 values(x,y,r,g,b,a) per
-			  vertices, GL_STATIC_DRAW
+	glBufferData(
+		GL_ARRAY_BUFFER,  
+		vertex_count * 6 * sizeof(f32),
+		vertices, 
+		GL_STATIC_DRAW
 	);
 
-	glVertexAttribPointer(0,2,GL_FLOAT, GL_FALSE, 6 * sizeof(f32), (void*)0);
-	glEnableVertexAttribArray(0); 
-	glVertexAttribPointer(1,4,GL_FLOAT, GL_FALSE, 6 * sizeof(f32), (void*)(2 * sizeof(f32)));
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
+	glBufferData(
+		GL_ELEMENT_ARRAY_BUFFER, 
+		indice_count * sizeof(u32),
+		indices, 
+		GL_STATIC_DRAW
+	);
+
+	// loads verts to shaders
+	glVertexAttribPointer(
+		0, 2, GL_FLOAT, GL_FALSE,
+		6 * sizeof(f32), // 6 float per vertex: x,y,r,g,b,a
+		(void*)0
+	);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(
+		1, 4, GL_FLOAT, GL_FALSE, 
+		6 * sizeof(f32), 
+		(void*)(2 * sizeof(f32))
+	);
 	glEnableVertexAttribArray(1);
+
+
 }
 
+void render_load_texture(Mesh* mesh, const char* path,
+						 const f32* vertices, const u32 vertice_count,
+						 const u32* indices, const u32 indice_count) {
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+	f32 border_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_color);
+
+	// load texture file
+	i32 image_width, image_height, image_nr_channels;
+	unsigned char* data = stbi_load(path, &image_width, &image_height, &image_nr_channels, 0);
+
+	if (!data) {
+		log_warn("render_load_texture failed to load texture of path: %s", path);
+		stbi_image_free(data);
+		return;
+	}
+
+	// prepare texture
+	glGenTextures(1, &mesh->texture);	
+	glBindTexture(GL_TEXTURE_2D, mesh->texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_width, image_height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+		
+	stbi_image_free(data);
+
+	// setting up mesh	
+
+	glVertexAttribPointer(
+		2, 2, GL_FLOAT, GL_FALSE,
+		7 * sizeof(f32),
+		(void*)(5 * sizeof(f32))
+	);
+	glEnableVertexAttribArray(2);
+}
 
 void render(Mesh* meshes, u32 mesh_count) {
 	glUseProgram(shader_program);
 	for (u32 i = 0; i < mesh_count; i++) {
 		glBindVertexArray(meshes[i].VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glDrawElements(
+			GL_TRIANGLES,
+			meshes[i].index_count,
+			GL_UNSIGNED_INT,
+			0
+		);
 	}
+	glBindVertexArray(0);
 }

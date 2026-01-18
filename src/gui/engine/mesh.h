@@ -10,6 +10,9 @@ typedef struct {
 typedef struct {
 	u32 VAO;
 	u32 VBO;
+	u32 EBO;
+	u32 texture;
+	u32 index_count;
 } Mesh; // stores each object rendered to the screen
 
 Mesh* mesh_create(M_Rect* data);
