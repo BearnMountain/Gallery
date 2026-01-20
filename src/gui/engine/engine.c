@@ -125,21 +125,21 @@ Mesh* engine_create_image(const char* path, const M_Rect* bounds, b32 visible) {
 	f32 x2 = ((f32)(bounds->x+bounds->width) / config.window_width) * 2.0f - 1.0f;
 	f32 y2 = ((f32)(bounds->y+bounds->height) / config.window_height) * 2.0f - 1.0f;
 
+	(void)x1;(void)y1;(void)x2;(void)y2;
 
 	float vertices[] = {
 		// positions          // colors           // texture coords
-		 0.5f,  0.5f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-		 0.5f, -0.5f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-		-0.5f, -0.5f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-		-0.5f,  0.5f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+		x2, y1,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+		x2, y2,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+		x1, y2,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+		x1, y1,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
 	};
 	u32 indices[] = {
 		0, 1, 2, 
-		1, 3, 2
+		3, 2, 0
 	}; 
 
-	render_load_texture(&meshes[mesh_count], path, vertices);
-
+	render_load_texture(&meshes[mesh_count], path, vertices, 4, indices, 6);
 
 	mesh_count++;
 	return &meshes[mesh_count-1];

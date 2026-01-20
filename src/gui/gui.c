@@ -16,6 +16,8 @@ void gui_init(void) {
 
 	// setting the scene
 	engine_create_label("test", &(M_Rect){100,100,100,100}, &(Color){100,100,100,255}, true);
+	engine_create_image("res/textures/tests.png", &(M_Rect){300,100,100,100}, false);
+
 }
 
 void gui_render(void) {
