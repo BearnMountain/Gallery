@@ -1,9 +1,18 @@
 BIN=Gallery
 CC=gcc
 OBJDIR=objs
-LIBS=glm glfw3
-CFLAGS=-Wall -Wextra -DGL_SILENCE_DEPRECATION -g $(shell pkg-config --cflags $(LIBS)) -I$(OBJDIR) -Isrc
-LDFLAGS=$(shell pkg-config --libs $(LIBS)) -framework OpenGL -framework Cocoa -framework IOKit -lm
+
+LIBS=cglm glfw3
+CFLAGS= \
+	-Wall -Wextra -DGL_SILENCE_DEPRECATION -g \
+	$(shell pkg-config --cflags $(LIBS)) \
+	-I$(OBJDIR) -Isrc
+LDFLAGS= \
+	$(shell pkg-config --libs $(LIBS)) \
+	-framework OpenGL \
+	-framework Cocoa \
+	-framework IOKit \
+
 SRC=$(shell find src -name '*.c' -type f)
 OBJ=$(patsubst %.c,$(OBJDIR)/%.o, $(SRC))
 

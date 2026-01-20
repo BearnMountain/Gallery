@@ -5,3 +5,4 @@
 -I/opt/homebrew/Cellar/glfw/3.4/include
 -Iobjs
 -Isrc
+-I/opt/homebrew/Cellar/cglm/0.9.6
